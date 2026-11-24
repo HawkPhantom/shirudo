@@ -308,6 +308,39 @@ int cert_key_algorithm(const struct cert *cert,
 	return 0;
 }
 
+static bool cert_is_mldsa87(const struct cert *cert)
+{
+	EVP_PKEY *pub;
+
+	if (!cert || !cert->impl)
+		return false;
+	pub = X509_get0_pubkey(cert->impl);
+	return pub && EVP_PKEY_is_a(pub, "ML-DSA-87");
+}
+
+int cert_require_mldsa87(const struct cert *cert, char *alg, size_t alg_sz)
+{
+	if (cert_is_mldsa87(cert))
+		return 0;
+	if (alg && cert_key_algorithm(cert, alg, alg_sz) && alg_sz > 1)
+		memcpy(alg, "?", 2);
+	return -EKEYREJECTED;
+}
+
+int cert_der_require_mldsa87(const __u8 *der, size_t der_sz,
+			     char *alg, size_t alg_sz)
+{
+	struct cert cert = {};
+	int ret;
+
+	ret = cert_read_der(der, der_sz, &cert);
+	if (ret)
+		return ret;
+	ret = cert_require_mldsa87(&cert, alg, alg_sz);
+	cert_free(&cert);
+	return ret;
+}
+
 int cert_subject(const struct cert *cert, char *out, size_t out_sz)
 {
 	char *text;

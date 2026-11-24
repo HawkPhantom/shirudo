@@ -59,6 +59,18 @@ int cert_pubkey_digest(const struct cert *cert,
 /* The provider's name for the cert's public key, e.g. "ML-DSA-87". */
 int cert_key_algorithm(const struct cert *cert,
 		       char *out, size_t out_sz) __must_check;
+/*
+ * 0 when the cert's public key is ML-DSA-87, the one algorithm shirudo
+ * trusts; -EKEYREJECTED for any other key and for a cert that holds
+ * none, with the key's algorithm in alg, "?" when it has no name, for
+ * the caller's message. alg may be NULL, and is left alone unless the
+ * key is refused.
+ */
+int cert_require_mldsa87(const struct cert *cert, char *alg,
+			 size_t alg_sz) __must_check;
+/* The same of DER bytes, with cert_read_der()'s error for no certificate. */
+int cert_der_require_mldsa87(const __u8 *der, size_t der_sz,
+			     char *alg, size_t alg_sz) __must_check;
 /* The subject on one line, "O=Example, CN=fleet", control bytes escaped. */
 int cert_subject(const struct cert *cert, char *out, size_t out_sz)
 	__must_check;
