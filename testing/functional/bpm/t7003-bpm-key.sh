@@ -21,4 +21,28 @@ else
 	'
 fi
 
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+
+# Without the namespace above, as CI runs, these still cover both
+# refusals: they come before any write, so the host's own keys stay
+# untouched, and the message shows it was the algorithm, not a write
+# without permission, that failed.
+test_expect_success 'bpm key add refuses a certificate that is not ML-DSA-87' '
+	openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
+		-keyout "$WORK/ec.key" -outform DER -out "$WORK/ec.der" \
+		-days 1 -subj "/CN=t7003" >/dev/null 2>&1 &&
+	! "$SHIRUDO" bpm key add "$WORK/ec.der" >"$WORK/add.out" 2>&1 &&
+	grep -q "ec.der is EC; shirudo accepts only ML-DSA-87" "$WORK/add.out"
+'
+
+test_expect_success 'bpm config register add refuses a certificate that is not ML-DSA-87' '
+	rc=0 &&
+	"$SHIRUDO" bpm config register add src oci://registry.example \
+		--cert "$WORK/ec.der" >"$WORK/register.out" 2>&1 || rc=$? &&
+	[ "$rc" -eq 2 ] &&
+	grep -q "ec.der is EC; shirudo accepts only ML-DSA-87" \
+		"$WORK/register.out"
+'
+
 test_done

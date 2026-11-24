@@ -691,7 +691,8 @@ signed config image.
        replaces no file, not even after a failed digest, and names none
        after a layer title that is not a package name; with a private
        mount namespace, ``key add`` and ``config register add`` writing
-       the certificate they read, in DER
+       the certificate they read, in DER; both refusing a certificate
+       that is not ML-DSA-87 before they write
    * - ``t7004-bpm-repo-update``
      - The repository update unit and timer and their package
        scriptlets, as text

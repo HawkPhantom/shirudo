@@ -1568,6 +1568,26 @@ static int bpm_register_remove(int argc, const char **argv,
 }
 
 /*
+ * The certificate either command writes becomes the primary of the
+ * trusted set or the key of a repository's index, and the set and the
+ * signature check take ML-DSA-87 alone.
+ */
+static int signing_cert_der(const struct cert *cert, const char *command,
+			    const char *source, __u8 **der, size_t *len)
+{
+	char alg[32] = {};
+	int ret;
+
+	ret = cert_require_mldsa87(cert, alg, sizeof(alg));
+	if (ret) {
+		pr_err("%s: %s is %s; shirudo accepts only ML-DSA-87",
+		       command, source, alg);
+		return ret;
+	}
+	return cert_encode_der(cert, der, len);
+}
+
+/*
  * The bytes written are those of the certificate parsed here, in DER
  * whatever form path held: a second read of path could find others.
  */
@@ -1580,11 +1600,13 @@ static int register_source(const char *path, struct bpm_source *s)
 
 	ret = cert_read_file(path, &cert);
 	if (!ret)
-		ret = cert_encode_der(&cert, &der, &len);
+		ret = signing_cert_der(&cert, "bpm: register add", path, &der,
+				       &len);
 	cert_free(&cert);
 	if (ret) {
-		pr_err("bpm: register add: cannot read certificate %s: %s",
-		       path, strerror(-ret));
+		if (ret != -EKEYREJECTED)
+			pr_err("bpm: register add: cannot read certificate %s: %s",
+			       path, strerror(-ret));
 		return EXIT_USAGE;
 	}
 	ret = seal_mkdir_p(BPM_REGISTRIES_DIR, 0700);
@@ -2877,7 +2899,8 @@ static const struct help bpm_key_help = {
 		  "  shirudo bpm key list",
 };
 
-static int process_key(const __u8 *bytes, size_t size, bool install)
+static int process_key(const char *source, const __u8 *bytes, size_t size,
+		       bool install)
 {
 	struct cert cert = {};
 	__u8 *der = NULL;
@@ -2889,7 +2912,7 @@ static int process_key(const __u8 *bytes, size_t size, bool install)
 	if (!ret)
 		ret = key_fingerprint(&cert, hex);
 	if (!ret && install) {
-		ret = cert_encode_der(&cert, &der, &len);
+		ret = signing_cert_der(&cert, "bpm key add", source, &der, &len);
 		if (!ret)
 			ret = install_key(hex, der, len);
 	}
@@ -2946,7 +2969,7 @@ static int cmd_bpm_key(int argc, const char **argv)
 		return bpm_fail("initialize curl", -EIO);
 	ret = key_source_read(source, &der, &len, &cap);
 	if (!ret) {
-		ret = process_key(der, len, !strcmp(sub, "add"));
+		ret = process_key(source, der, len, !strcmp(sub, "add"));
 		xfree(der, cap);
 	}
 	return bpm_finish(-1, ret, !strcmp(sub, "add") ?

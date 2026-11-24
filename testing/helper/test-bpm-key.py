@@ -75,6 +75,7 @@ def main():
 
         pem, der, fingerprint = certificate("first")
         _, other, other_fp = certificate("second")
+        _, classical, classical_fp = certificate("classical", "rsa:2048")
         bee = package("package.bee", der.read_bytes())
         assert run("--list-cmds").splitlines() == ["add", "fingerprint", "list"]
         for command in ("add", "fingerprint", "list"):
@@ -85,6 +86,7 @@ def main():
         assert run("fingerprint", str(der)) == fingerprint
         assert run("fingerprint", str(pem)) == fingerprint
         assert run("fingerprint", str(bee)) == fingerprint
+        assert run("fingerprint", str(classical)) == classical_fp
         assert hashlib.sha256(der.read_bytes()).hexdigest() != fingerprint
         (root / "invalid.der").write_text("not a certificate")
         run("fingerprint", str(root / "invalid.der"), ok=False)
@@ -100,7 +102,13 @@ def main():
 
         if isolated:
             assert json.loads(run("list", "--json"))["fingerprints"] == []
+            refused = bpm("key", "add", str(classical))
+            assert refused.returncode and "accepts only ML-DSA-87" in refused.stderr, refused
+            assert not keys.exists()
             register = ("config", "register", "add", "src", "oci://registry.example", "--cert")
+            refused = bpm(*register, str(classical))
+            assert refused.returncode == 2 and "accepts only ML-DSA-87" in refused.stderr, refused
+            assert not registry.exists()
             added = bpm(*register, str(pem))
             assert added.returncode == 0, added
             assert (registry / "keys/src.der").read_bytes() == der.read_bytes()
