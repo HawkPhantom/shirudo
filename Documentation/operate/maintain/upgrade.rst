@@ -155,7 +155,8 @@ it.
 3. For a dynamically linked binary, install ``runtime-service-2.conf`` as
    ``/etc/systemd/system/shirudo.service.d/runtime.conf`` and update the
    other drop-ins from :ref:`unit-drop-ins` to its invocation. For the
-   static binary the drop-ins stay as they are.
+   static PIE target package, the shipped units already invoke
+   ``/run/shirudo/runtime/usr/bin/shirudo`` and need no update.
 
 4. Generate the initrd with the new bootstrap file:
 
