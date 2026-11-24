@@ -137,7 +137,8 @@ image, the image's ``etc/shirudo/bpm/registries.d/`` is used instead, and
 
 - ``add`` checks that the endpoint is ``oci://<host>[:<port>]`` without a
   path, checks ``--index-repository`` and that ``--cert`` is a
-  certificate, and refuses any other option. It copies the certificate to
+  certificate, and refuses any other option. It writes the certificate
+  it read, in DER whether ``--cert`` holds DER or PEM, to
   ``/etc/shirudo/bpm/keys/<source>.der`` and writes the source file.
 - ``list`` prints the registered source names, one per line.
 - ``remove`` and ``rm`` delete the source file and its certificate.
@@ -430,9 +431,10 @@ key
 ---
 
 - ``key fingerprint`` prints the SHA-256 fingerprint of a certificate's
-  public key (SPKI). The argument is a DER certificate, a ``.bee`` package
-  (its ``cert.der``) or an ``oci://`` package reference. The certificate
-  is read once, so ``key add`` installs the bytes it fingerprints.
+  public key (SPKI). The argument is a DER or PEM certificate, a ``.bee``
+  package (its ``cert.der``) or an ``oci://`` package reference. The
+  certificate is read once, and ``key add`` writes that certificate, in
+  DER.
 - ``key add`` prints the same fingerprint and installs the certificate in
   ``/var/lib/shirudo/keys/<fingerprint>.der``. When
   ``/var/lib/shirudo/keys/cert.der`` does not exist, it links ``cert.der``

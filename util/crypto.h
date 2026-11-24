@@ -54,6 +54,8 @@ struct cert {
 int cert_read_file(const char *path, struct cert *cert) __must_check;
 int cert_read_fd(int fd, struct cert *cert) __must_check;
 void cert_free(struct cert *cert);
+/* The certificate in DER, in a buffer the caller releases with xfree(). */
+int cert_encode_der(const struct cert *cert, __u8 **der, size_t *size) __must_check;
 int cert_pubkey_digest(const struct cert *cert,
 		       __u8 out[CRYPTO_SHA256_LEN]) __must_check;
 /* The provider's name for the cert's public key, e.g. "ML-DSA-87". */

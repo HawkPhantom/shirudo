@@ -251,6 +251,29 @@ void cert_free(struct cert *cert)
 	cert->impl = NULL;
 }
 
+int cert_encode_der(const struct cert *cert, __u8 **der, size_t *size)
+{
+	__u8 *buf, *next;
+	int len;
+
+	if (!cert || !cert->impl || !der || !size)
+		return -EINVAL;
+	len = i2d_X509(cert->impl, NULL);
+	if (len <= 0)
+		return -EINVAL;
+	buf = xmalloc((size_t)len);
+	if (!buf)
+		return -ENOMEM;
+	next = buf;
+	if (i2d_X509(cert->impl, &next) != len) {
+		xfree(buf, (size_t)len);
+		return -EINVAL;
+	}
+	*der = buf;
+	*size = (size_t)len;
+	return 0;
+}
+
 /*
  * SHA-256 over the DER SubjectPublicKeyInfo, the bytes Go's
  * x509.MarshalPKIXPublicKey writes; X509_pubkey_digest() hashes only the

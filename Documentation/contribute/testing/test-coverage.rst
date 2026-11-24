@@ -689,7 +689,9 @@ signed config image.
    * - ``t7003-bpm-key``
      - ``bpm key`` from files and OCI references, ``bpm pull``, which
        replaces no file, not even after a failed digest, and names none
-       after a layer title that is not a package name
+       after a layer title that is not a package name; with a private
+       mount namespace, ``key add`` and ``config register add`` writing
+       the certificate they read, in DER
    * - ``t7004-bpm-repo-update``
      - The repository update unit and timer and their package
        scriptlets, as text

@@ -5,11 +5,13 @@
 #include <string.h>
 
 #include <openssl/evp.h>
+#include <openssl/pem.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
 #include "crypto.h"
 #include "hex.h"
+#include "malloc.h"
 #include "unit.h"
 
 static void sha256_matches_fips_180_vector(void)
@@ -158,11 +160,48 @@ static void cert_der_require_mldsa87_names_a_refused_algorithm(void)
 	EXPECT_NE(ret, -EKEYREJECTED);
 }
 
+static void cert_encode_der_encodes_a_pem_certificate(void)
+{
+	EVP_PKEY *key = keygen("ML-DSA-87");
+	struct cert empty = {}, cert = {};
+	BIO *pem = BIO_new(BIO_s_mem());
+	__u8 *want = NULL, *got = NULL;
+	size_t want_len, got_len = 0;
+	X509 *x = self_signed(key);
+	char *pem_data = NULL;
+	long pem_len;
+
+	ASSERT_TRUE(pem);
+	ASSERT_EQ(PEM_write_bio_X509(pem, x), 1);
+	pem_len = BIO_get_mem_data(pem, &pem_data);
+	ASSERT_TRUE(pem_len > 0);
+	ASSERT_EQ(cert_read_memory((const __u8 *)pem_data, (size_t)pem_len,
+				   &cert), 0);
+
+	EXPECT_EQ(cert_encode_der(NULL, &got, &got_len), -EINVAL);
+	EXPECT_EQ(cert_encode_der(&empty, &got, &got_len), -EINVAL);
+	EXPECT_EQ(cert_encode_der(&cert, NULL, &got_len), -EINVAL);
+	EXPECT_EQ(cert_encode_der(&cert, &got, NULL), -EINVAL);
+
+	want_len = der_of(x, &want);
+	ASSERT_EQ(cert_encode_der(&cert, &got, &got_len), 0);
+	EXPECT_EQ(got_len, want_len);
+	EXPECT_MEMEQ(got, want, want_len);
+
+	xfree(got, got_len);
+	OPENSSL_free(want);
+	cert_free(&cert);
+	BIO_free(pem);
+	X509_free(x);
+	EVP_PKEY_free(key);
+}
+
 static const struct unit_case cases[] = {
 	UNIT_CASE(sha256_matches_fips_180_vector),
 	UNIT_CASE(sha256_buffer_zeroes_a_failed_digest),
 	UNIT_CASE(cert_require_mldsa87_accepts_ml_dsa_87_only),
 	UNIT_CASE(cert_der_require_mldsa87_names_a_refused_algorithm),
+	UNIT_CASE(cert_encode_der_encodes_a_pem_certificate),
 	{}
 };
 
