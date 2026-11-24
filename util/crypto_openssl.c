@@ -425,9 +425,13 @@ static CMS_ContentInfo *read_cms(const __u8 *signature, size_t len)
 }
 
 /*
- * The algorithm comes from the SignerInfo, so an ML-DSA signature,
- * with signedAttrs and SHA-512 or bare on OpenSSL 4, and an RSA one
- * verify through one call; ML-DSA needs libcrypto >= 3.5.
+ * The detached CMS signature of an index, a tree publication, a
+ * package, a vouch, a Java upatch or a config root, stands on this one
+ * call, so a certificate of any other algorithm is refused here: a
+ * classical key would let an adversary who can break it forge them all.
+ * With ML-DSA-87 the SignerInfo decides the rest, so a signature with
+ * signedAttrs and SHA-512 and a bare one on OpenSSL 4 verify alike;
+ * ML-DSA needs libcrypto >= 3.5.
  */
 int verify_detached(const __u8 *payload, size_t payload_len,
 		    const __u8 *signature, size_t signature_len,
@@ -442,6 +446,8 @@ int verify_detached(const __u8 *payload, size_t payload_len,
 	if (!payload || !signature || !cert || !cert->impl ||
 	    payload_len > INT_MAX || signature_len > INT_MAX)
 		return -EINVAL;
+	if (!cert_is_mldsa87(cert))
+		return -EKEYREJECTED;
 	data = BIO_new_mem_buf(payload, (int)payload_len);
 	out = BIO_new(BIO_s_null());
 	store = X509_STORE_new();

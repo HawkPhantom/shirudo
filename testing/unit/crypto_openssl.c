@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include <openssl/cms.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>
@@ -196,12 +197,95 @@ static void cert_encode_der_encodes_a_pem_certificate(void)
 	EVP_PKEY_free(key);
 }
 
+static const char payload[] = "an index or a tree publication";
+
+/* A detached CMS signature over payload, with SHA-512 signed attributes. */
+static int sign_payload(EVP_PKEY *key, X509 *x, __u8 **sig)
+{
+	BIO *data = BIO_new_mem_buf(payload, sizeof(payload) - 1);
+	CMS_ContentInfo *cms;
+	int len;
+
+	ASSERT_TRUE(data);
+	cms = CMS_sign(NULL, NULL, NULL, NULL,
+		       CMS_BINARY | CMS_DETACHED | CMS_PARTIAL);
+	ASSERT_TRUE(cms);
+	ASSERT_TRUE(CMS_add1_signer(cms, x, key, EVP_sha512(),
+				    CMS_BINARY | CMS_NOCERTS |
+				    CMS_NOSMIMECAP | CMS_USE_KEYID));
+	ASSERT_EQ(CMS_final(cms, data, NULL, CMS_BINARY | CMS_DETACHED), 1);
+	*sig = NULL;
+	len = i2d_CMS_ContentInfo(cms, sig);
+	ASSERT_TRUE(len > 0);
+	CMS_ContentInfo_free(cms);
+	BIO_free(data);
+	return len;
+}
+
+static bool openssl_verifies(X509 *x, const __u8 *sig, int sig_len)
+{
+	BIO *data = BIO_new_mem_buf(payload, sizeof(payload) - 1);
+	const __u8 *p = sig;
+	CMS_ContentInfo *cms;
+	bool ok;
+
+	ASSERT_TRUE(data);
+	cms = d2i_CMS_ContentInfo(NULL, &p, sig_len);
+	ASSERT_TRUE(cms);
+	ASSERT_EQ(CMS_add1_cert(cms, x), 1);
+	ok = CMS_verify(cms, NULL, NULL, data, NULL,
+			CMS_BINARY | CMS_DETACHED |
+			CMS_NO_SIGNER_CERT_VERIFY) == 1;
+	CMS_ContentInfo_free(cms);
+	BIO_free(data);
+	return ok;
+}
+
+/* verify_detached() with the signer's own cert, after signing with key. */
+static int verify_signed_by(const char *alg, bool *sound)
+{
+	EVP_PKEY *key = keygen(alg);
+	X509 *x = self_signed(key);
+	struct cert cert = {};
+	__u8 *sig = NULL;
+	int sig_len, ret;
+
+	read_cert(x, &cert);
+	sig_len = sign_payload(key, x, &sig);
+	*sound = openssl_verifies(x, sig, sig_len);
+	ret = verify_detached((const __u8 *)payload, sizeof(payload) - 1,
+			      sig, (size_t)sig_len, &cert);
+	OPENSSL_free(sig);
+	cert_free(&cert);
+	X509_free(x);
+	EVP_PKEY_free(key);
+	return ret;
+}
+
+static void verify_detached_accepts_an_ml_dsa_87_signer(void)
+{
+	bool sound = false;
+
+	EXPECT_EQ(verify_signed_by("ML-DSA-87", &sound), 0);
+	EXPECT_TRUE(sound);
+}
+
+static void verify_detached_refuses_a_classical_signer(void)
+{
+	bool sound = false;
+
+	EXPECT_EQ(verify_signed_by("EC", &sound), -EKEYREJECTED);
+	EXPECT_TRUE(sound);
+}
+
 static const struct unit_case cases[] = {
 	UNIT_CASE(sha256_matches_fips_180_vector),
 	UNIT_CASE(sha256_buffer_zeroes_a_failed_digest),
 	UNIT_CASE(cert_require_mldsa87_accepts_ml_dsa_87_only),
 	UNIT_CASE(cert_der_require_mldsa87_names_a_refused_algorithm),
 	UNIT_CASE(cert_encode_der_encodes_a_pem_certificate),
+	UNIT_CASE(verify_detached_accepts_an_ml_dsa_87_signer),
+	UNIT_CASE(verify_detached_refuses_a_classical_signer),
 	{}
 };
 
