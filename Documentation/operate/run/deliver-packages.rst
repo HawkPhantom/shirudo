@@ -434,8 +434,8 @@ Timers and locks
      - 60 s after boot, then every 60 s
 
 Both services invoke ``/run/shirudo/runtime/usr/bin/shirudo`` directly
-on static target packages. A dynamically linked binary needs their
-drop-ins (:ref:`unit-drop-ins`).
+on static target packages. For a dynamically linked binary, install the
+drop-ins from ``shirudo-gen-runtime --unit-dir`` (:ref:`unit-drop-ins`).
 
 ``bpm install``, ``upgrade``, ``uninstall``, ``repo update`` and
 ``tree sync`` lock the verified state root on an enforcing target and wait for it

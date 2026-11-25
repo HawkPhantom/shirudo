@@ -96,8 +96,9 @@ Prepare the target
        before the first boot with enforcement.
      - :doc:`/operate/deploy/boot-integration`
    * - 14
-     - For a dynamically linked binary, drop-ins installed for all six
-       target services (optional for a static PIE target package, except when
+     - For a dynamically linked binary, drop-ins from
+       ``shirudo-gen-runtime --unit-dir`` installed for all six target
+       services (optional for a static PIE target package, except when
        clearing ``EnvironmentFile=`` on ``shirudo.service``).
      - :ref:`unit-drop-ins`
    * - 15

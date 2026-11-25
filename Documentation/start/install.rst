@@ -241,9 +241,9 @@ enforces once it boots through the shirudo initrd with everything that
 - An initrd built with ``shirudo-gen-initrd``, booted from an
   authenticated unified kernel image.
 - For a static PIE target package, the shipped root-filesystem units
-  already invoke ``/run/shirudo/runtime/usr/bin/shirudo``. A
-  dynamically linked binary needs a drop-in for each of the six target
-  services that runs it through the image's own loader.
+  already invoke ``/run/shirudo/runtime/usr/bin/shirudo``. For a
+  dynamically linked binary, install the drop-ins that
+  ``shirudo-gen-runtime --unit-dir`` writes for all six target services.
 
 :doc:`/operate/deploy/boot-integration` sets these up. After the reboot,
 ``shirudo status`` on the target shows ``Status: ok`` with every

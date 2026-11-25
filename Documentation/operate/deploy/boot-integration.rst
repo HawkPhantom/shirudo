@@ -309,24 +309,14 @@ only needed to clear ``EnvironmentFile=`` and drop
        /etc/systemd/system/shirudo.service.d/runtime.conf
    target# systemctl daemon-reload
 
-For a dynamically linked binary, install the ``shirudo.service``
-drop-in and write one for each of the other five services,
-``/etc/systemd/system/<unit>.d/runtime.conf``, whose ``ExecStart=``
-repeats the unit's with ``/run/shirudo/runtime/usr/bin/shirudo``
-replaced by the invocation ``shirudo-gen-runtime`` printed, which runs
-the binary through the image's own loader and libraries. For
-``shirudo-bpm-repo-update.service``:
-
-.. code-block:: ini
-
-   [Service]
-   ExecStart=
-   ExecStart=-<invocation> bpm repo update
-   ExecStart=<invocation> bpm upgrade
-
-Then run ``systemctl daemon-reload``. ``shirudo-initrd.service`` needs
-no drop-in: it runs in the initrd, from the binary the UKI
-authenticates.
+For a dynamically linked binary, pass ``--unit-dir <dir>`` to
+``shirudo-gen-runtime`` to generate ``<unit>.d/runtime.conf`` for all
+six target services (``shirudo``, ``shirudo-keepalive``,
+``shirudo-map-export``, ``shirudo-xdp-reconcile``,
+``shirudo-bpm-repo-update`` and ``shirudo-bpm-tree-sync``), copy the
+generated ``*.service.d`` directories into ``/etc/systemd/system/`` and
+run ``systemctl daemon-reload``. ``shirudo-initrd.service`` needs no
+drop-in: it runs in the initrd, from the binary the UKI authenticates.
 :doc:`/reference/systemd-units` lists the units and their schedules.
 
 The deb and rpm packages enable ``shirudo.service`` and the five timers

@@ -445,7 +445,8 @@ signed config image.
    * - ``t5001-config-image``
      - Image builder and ``veritysetup`` format, superblock and size
        checks, the ML-DSA-87 root signature, runtime acceptance by the
-       exact root, the generator scripts and multiple config certificates
+       exact root, the generator scripts (including ``--unit-dir``), and
+       multiple config certificates
    * - ``t5002-image-config``
      - Settings a config may set, symbolic links and special files
    * - ``t5003-image-keys``

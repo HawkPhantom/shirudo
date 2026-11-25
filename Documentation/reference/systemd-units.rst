@@ -170,9 +170,11 @@ The shipped units already run ``/run/shirudo/runtime/usr/bin/shirudo``
 directly, so a static target package needs no drop-ins unless an
 operator wants to clear ``EnvironmentFile=`` and drop
 ``$SHIRUDO_INIT_ARGS`` on ``shirudo.service``.
-For a dynamically linked binary, each of the six services needs a
-drop-in whose ``ExecStart=`` runs the binary through the image's own
-loader, as the ``shirudo.service`` drop-in above does. See
+For a dynamically linked binary, pass ``--unit-dir <dir>`` to
+``shirudo-gen-runtime`` to generate ``<unit>.d/runtime.conf`` for all
+six target services (``shirudo``, ``shirudo-keepalive``,
+``shirudo-map-export``, ``shirudo-xdp-reconcile``,
+``shirudo-bpm-repo-update`` and ``shirudo-bpm-tree-sync``). See
 :doc:`/operate/deploy/boot-integration`.
 
 shirudo-keepalive.service

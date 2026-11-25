@@ -180,9 +180,10 @@ command runs:
 
 All six shipped root-filesystem services invoke
 ``/run/shirudo/runtime/usr/bin/shirudo`` directly (see
-:doc:`/reference/systemd-units`). A dynamically linked binary needs a
-drop-in for each, and ``shirudo-gen-runtime --unit-output`` writes the
-one for ``shirudo.service``.
+:doc:`/reference/systemd-units`). For a dynamically linked binary,
+``shirudo-gen-runtime --unit-dir`` generates drop-ins for all six
+services; ``--unit-output`` writes the ``shirudo.service`` drop-in
+alone.
 
 Image gate
 ~~~~~~~~~~
