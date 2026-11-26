@@ -141,6 +141,10 @@ another process, with ``EACCES``: a task holds a reference to its own
 address space for as long as it runs, so the scan of its own cannot
 race an exit and keeps working. CRIU, which scans the process it dumps,
 fails with the second loaded. Both select ``CONFIG_PROC_PAGE_MONITOR``.
+``reproducer/cve-2026-99477-pagemap-scan-probe.py`` scans its own
+``pagemap`` and a child's and reads the child's, and prints which of the
+three the kernel refused; ``t3122-pagemap-scan-block`` drives it against
+both.
 
 app-sandbox
 -----------
